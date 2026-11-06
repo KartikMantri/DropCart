@@ -104,7 +104,7 @@ async function main() {
             maxPrice,
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             mode: "AUTO",
-            allowedMerchants: quote?.merchantDomain ? [quote.merchantDomain] : [],
+            allowedMerchants: [], // any store
           },
         },
         priceChecks: {

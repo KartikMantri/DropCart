@@ -125,8 +125,8 @@ Both are called through `lib/llm.ts`, which exposes a single AI SDK model. That 
 **Prerequisites:** Node.js 20 or later, a free Supabase project, and free API keys (see the table below).
 
 ```bash
-git clone https://github.com/KartikMantri/dropcart.git
-cd dropcart
+git clone https://github.com/KartikMantri/DropCart.git
+cd DropCart
 npm install            # also runs `prisma generate`
 cp .env.example .env.local   # fill in the values below
 npx prisma migrate deploy

@@ -75,7 +75,9 @@ export async function createWatch(userId: string, input: ConfirmMandateInput) {
           maxPrice: input.maxPrice,
           expiresAt: new Date(Date.now() + input.expiresInDays * DAY_MS),
           mode: input.mode,
-          allowedMerchants: quote.merchantDomain ? [quote.merchantDomain] : [],
+          // Empty = any store: DropCart is merchant of record, so a drop at
+          // any Channel3 store counts. The guard enforces a list when set.
+          allowedMerchants: [],
         },
       },
       priceChecks: {
