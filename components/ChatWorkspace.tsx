@@ -8,6 +8,7 @@ import type { AgentTools, DraftMandateOutput } from "@/lib/agent-tools";
 import type { VariantDimension } from "@/lib/channel3";
 import { emptyDraft, formatUsd, type MandateDraft, type MandateField } from "@/lib/mandate";
 import { ChatPanel } from "./ChatPanel";
+import { ConnectPaypal } from "./ConnectPaypal";
 import { MandateForm } from "./MandateForm";
 
 export type AgentUIMessage = UIMessage<unknown, UIDataTypes, InferUITools<AgentTools>>;
@@ -20,12 +21,14 @@ export function ChatWorkspace({
   variants,
   initialVariant,
   priceNow,
+  available,
   llmReady,
 }: {
   likedItemId: string;
   variants: VariantDimension[];
   initialVariant: Record<string, string>;
   priceNow: number | null;
+  available: number | null;
   llmReady: boolean;
 }) {
   const [draft, setDraft] = useState<MandateDraft>(() => ({
@@ -133,9 +136,12 @@ export function ChatWorkspace({
           {created.wouldBuyNow && " Your limit is above today's price, so it will ask you before buying."}
         </p>
         {!created.paymentReady && (
-          <p className="border-[3px] border-ink bg-pink px-3 py-2 font-bold">
-            Next: approve PayPal once (sandbox). Coming on Day 3. Until then nothing can be charged.
-          </p>
+          <div className="flex flex-col items-start gap-3 border-[3px] border-ink bg-pink px-3 py-3">
+            <p className="font-bold">
+              Next: approve PayPal once (sandbox). Until then nothing can be charged.
+            </p>
+            <ConnectPaypal next="/wishlist" />
+          </div>
         )}
         <div className="flex gap-3">
           <Link href="/wishlist" className="nb-btn">
@@ -168,6 +174,7 @@ export function ChatWorkspace({
           agentFields={agentFields}
           variants={variants}
           priceNow={draftPrice}
+          available={available}
           notes={notes}
           submitting={submitting}
           error={submitError}

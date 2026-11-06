@@ -22,8 +22,8 @@ function base(): GuardInput {
       inStock: true,
       merchantDomain: "bestbuy.com",
     },
-    monthSpend: 0,
-    monthlyBudget: 500,
+    spent: 0,
+    budget: 500,
     now: NOW,
   };
 }
@@ -32,8 +32,8 @@ type Patch = {
   watch?: Partial<GuardInput["watch"]>;
   mandate?: Partial<GuardInput["mandate"]>;
   live?: Partial<NonNullable<GuardInput["live"]>> | null;
-  monthSpend?: number;
-  monthlyBudget?: number;
+  spent?: number;
+  budget?: number;
   now?: Date;
 };
 
@@ -43,8 +43,8 @@ function run(patch: Patch = {}) {
     watch: { ...b.watch, ...patch.watch },
     mandate: { ...b.mandate, ...patch.mandate },
     live: patch.live === null ? null : { ...b.live!, ...patch.live },
-    monthSpend: patch.monthSpend ?? b.monthSpend,
-    monthlyBudget: patch.monthlyBudget ?? b.monthlyBudget,
+    spent: patch.spent ?? b.spent,
+    budget: patch.budget ?? b.budget,
     now: patch.now ?? b.now,
   });
 }
@@ -64,7 +64,7 @@ describe("guard: BUY", () => {
     expectRule({ live: { price: 280 } }, "BUY", "within_mandate");
   });
   it("spend exactly reaching the budget is allowed", () => {
-    expectRule({ monthSpend: 231 }, "BUY", "within_mandate");
+    expectRule({ spent: 231 }, "BUY", "within_mandate");
   });
   it("variant comparison is case-insensitive", () => {
     expectRule({ live: { variant: "color=black" } }, "BUY", "within_mandate");
@@ -137,8 +137,8 @@ describe("guard: SKIP / EXPIRE / ASK rules", () => {
     expectRule({ live: { price: null } }, "SKIP", "price");
   });
 
-  it("A4: inside mandate but over monthly budget → ASK budget", () => {
-    expectRule({ monthSpend: 300 }, "ASK", "budget");
+  it("A4: inside mandate but over the DropCart Budget → ASK budget", () => {
+    expectRule({ spent: 300 }, "ASK", "budget");
   });
 
   it("ASK_FIRST mode → ASK mode", () => {
@@ -172,11 +172,11 @@ describe("guard: rule order (first match wins)", () => {
     expectRule({ live: { inStock: false, price: 999 } }, "SKIP", "stock");
   });
   it("price beats budget: never ASK about something over the limit", () => {
-    expectRule({ live: { price: 300 }, monthSpend: 1000 }, "SKIP", "price");
+    expectRule({ live: { price: 300 }, spent: 1000 }, "SKIP", "price");
   });
   it("budget beats mode and limitJustRaised", () => {
     expectRule(
-      { monthSpend: 400, mandate: { mode: "ASK_FIRST" }, watch: { limitJustRaised: true } },
+      { spent: 400, mandate: { mode: "ASK_FIRST" }, watch: { limitJustRaised: true } },
       "ASK",
       "budget",
     );

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { VariantDimension } from "@/lib/channel3";
 import {
   formatUsd,
@@ -24,6 +25,7 @@ export function MandateForm({
   agentFields,
   variants,
   priceNow,
+  available,
   notes,
   submitting,
   error,
@@ -34,6 +36,8 @@ export function MandateForm({
   agentFields: Set<MandateField>;
   variants: VariantDimension[];
   priceNow: number | null;
+  /** DropCart Budget still free; null when unknown. */
+  available: number | null;
   notes: string[];
   submitting: boolean;
   error: string | null;
@@ -42,8 +46,13 @@ export function MandateForm({
 }) {
   const choosable = variants.filter((d) => d.values.filter((v) => v.exists).length > 0);
   const wouldBuyNow = draft.maxPrice != null && priceNow != null && draft.maxPrice >= priceNow;
+  const overBudget = draft.maxPrice != null && available != null && draft.maxPrice > available;
   const canConfirm =
-    draft.maxPrice != null && draft.maxPrice > 0 && draft.expiresInDays != null && !submitting;
+    draft.maxPrice != null &&
+    draft.maxPrice > 0 &&
+    draft.expiresInDays != null &&
+    !overBudget &&
+    !submitting;
 
   return (
     <form
@@ -77,7 +86,16 @@ export function MandateForm({
             onChange("maxPrice", e.target.value === "" ? null : Number(e.target.value))
           }
         />
-        <p className="mt-1 font-mono text-sm">Today: {formatUsd(priceNow)}</p>
+        <p className="mt-1 font-mono text-sm">
+          Today: {formatUsd(priceNow)}
+          {available != null && <> · Budget free: {formatUsd(Math.max(0, available))}</>}
+        </p>
+        {overBudget && (
+          <p role="alert" className="mt-2 border-[3px] border-ink bg-red px-3 py-2 text-sm font-bold">
+            Only {formatUsd(Math.max(0, available ?? 0))} of your DropCart Budget is free. Lower the
+            limit, <Link href="/wishlist#budget" className="underline">top up your budget</Link>, or cancel a watch.
+          </p>
+        )}
       </div>
 
       {choosable.map((dim) => (
@@ -186,7 +204,7 @@ export function MandateForm({
         {submitting ? "Confirming…" : "Confirm mandate"}
       </button>
       <p className="text-center font-mono text-xs uppercase">
-        Next step: approve PayPal once (sandbox)
+        Reserves this limit from your DropCart Budget
       </p>
     </form>
   );

@@ -17,7 +17,8 @@
  *   7 store not in allowed merchants       → SKIP  merchant   (empty list = any store)
  *   8 out of stock                         → SKIP  stock
  *   9 no price / price > max price         → SKIP  price
- *  10 month spend + price > monthly budget → ASK   budget
+ *  10 spent + price > DropCart Budget     → ASK   budget
+ *     (a safety net: watch creation already reserves the limit in lib/budget.ts)
  *  11 mandate mode is ASK_FIRST            → ASK   mode
  *  12 limit was just raised ≥ price        → ASK   would_buy_now
  *     otherwise                            → BUY   within_mandate
@@ -71,9 +72,10 @@ export type GuardInput = {
   mandate: GuardMandate;
   /** null when Channel3 has no offer for the product any more. */
   live: GuardLive | null;
-  /** Amount already captured this calendar month (USD). */
-  monthSpend: number;
-  monthlyBudget: number;
+  /** Total captured so far, not refunded (USD). See lib/budget.ts. */
+  spent: number;
+  /** DropCart Budget: a running pot the user tops up. */
+  budget: number;
   now: Date;
 };
 
@@ -93,7 +95,7 @@ const usd = (n: number) => `$${n.toFixed(2)}`;
 const cents = (n: number) => Math.round(n * 100);
 
 export function evaluate(input: GuardInput): GuardResult {
-  const { watch, mandate, live, monthSpend, monthlyBudget, now } = input;
+  const { watch, mandate, live, spent, budget, now } = input;
   const r = (decision: GuardDecision, rule: GuardRule, reason: string): GuardResult => ({
     decision,
     rule,
@@ -139,11 +141,11 @@ export function evaluate(input: GuardInput): GuardResult {
   if (cents(live.price) > cents(mandate.maxPrice)) {
     return r("SKIP", "price", `${usd(live.price)} is above the ${usd(mandate.maxPrice)} limit.`);
   }
-  if (cents(monthSpend) + cents(live.price) > cents(monthlyBudget)) {
+  if (cents(spent) + cents(live.price) > cents(budget)) {
     return r(
       "ASK",
       "budget",
-      `Buying at ${usd(live.price)} would take this month's spend over the ${usd(monthlyBudget)} budget.`,
+      `Buying at ${usd(live.price)} would take total spend over your ${usd(budget)} DropCart Budget.`,
     );
   }
   if (mandate.mode === "ASK_FIRST") {

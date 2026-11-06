@@ -45,7 +45,9 @@ model User {
   email            String         @unique
   paypalCustomerId String? // PayPal vault customer id
   paypalVaultToken String? // PayPal vault payment token — never card data
-  monthlyBudget    Decimal        @default(500) @db.Decimal(10, 2)
+  // DropCart Budget: a running pot. Topping up raises it; no money is held.
+  // available = budget − spent (captured) − reserved (open watches' max prices)
+  budget           Decimal        @default(500) @db.Decimal(10, 2)
   likedItems       LikedItem[]
   watches          Watch[]
   notifications    Notification[]

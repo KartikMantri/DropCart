@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { getBudget } from "@/lib/budget";
 import { getProduct } from "@/lib/channel3";
 import { getDb } from "@/lib/db";
 import { hasLlm } from "@/lib/llm";
@@ -31,7 +32,10 @@ export default async function ChatPage({ params }: PageProps<"/chat/[likedItemId
   if (!item) notFound();
 
   // Free Channel3 endpoint: always show today's price and real variant options.
-  const product = await getProduct(item.channel3ProductId).catch(() => null);
+  const [product, budget] = await Promise.all([
+    getProduct(item.channel3ProductId).catch(() => null),
+    getBudget(user.id),
+  ]);
   const watch = item.watches[0];
 
   return (
@@ -88,6 +92,7 @@ export default async function ChatPage({ params }: PageProps<"/chat/[likedItemId
             variants={product.variants}
             initialVariant={product.selected}
             priceNow={product.price}
+            available={budget.available}
             llmReady={hasLlm()}
           />
         )}

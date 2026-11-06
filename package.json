@@ -16,7 +16,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "postinstall": "prisma generate",
-    "test:coverage": "vitest run --coverage.enabled --coverage.include=lib/guard.ts --coverage.include=lib/llm.ts --coverage.reporter=text"
+    "test:coverage": "vitest run --coverage.enabled --coverage.include=lib/guard.ts --coverage.include=lib/llm.ts --coverage.reporter=text",
+    "test:paypal": "tsx --conditions=react-server scripts/test-paypal.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.112",

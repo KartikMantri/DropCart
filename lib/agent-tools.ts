@@ -23,6 +23,8 @@ export type AgentContext = {
   likedItem: { id: string; channel3ProductId: string; title: string };
   /** Live product for the liked item (null if Channel3 no longer has it). */
   product: CatalogueProduct | null;
+  /** DropCart Budget still free for new watches (USD); undefined if unknown. */
+  budgetFree?: number;
 };
 
 const variantInput = z
@@ -207,6 +209,7 @@ export function systemPrompt(ctx: AgentContext): string {
     "- When you know the max price (and the variant, if needed), call draft_mandate. Then tell the user, in one or two sentences, to check the form and press Confirm.",
     "- Variant values must come from the product's options below or from list_variants.",
     "- mode is AUTO unless the user says they want to approve each purchase first (then ASK_FIRST). expiresInDays is 30 unless the user says otherwise.",
+    "- Each watch reserves its max price from the user's DropCart Budget. If the max price the user wants is more than the free budget, still draft it, but tell them only the free amount fits and they can lower the limit or top up their budget on the wishlist page.",
     "- Prices are USD. Reply in plain text: one to three short sentences, no markdown, no bullet lists, no tables.",
     "",
     "THE PRODUCT BEING WATCHED",
@@ -220,6 +223,7 @@ export function systemPrompt(ctx: AgentContext): string {
       : "",
     variants.length > 0 ? `- variant options: ${JSON.stringify(variants)}` : "- no variants",
     `- today is ${new Date().toISOString().slice(0, 10)}`,
+    ctx.budgetFree != null ? `- DropCart Budget free for new watches: $${Math.max(0, ctx.budgetFree).toFixed(2)}` : "",
   ]
     .filter(Boolean)
     .join("\n");

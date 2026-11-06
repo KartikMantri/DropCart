@@ -1,6 +1,7 @@
 import "server-only";
 import { resolveSelection } from "./agent-tools";
 import { getLiveQuote, getProduct, sameVariant, variantKey } from "./channel3";
+import { canReserve, getBudget, lockUserBudget, OPEN_STATUSES } from "./budget";
 import { getDb } from "./db";
 import type { ConfirmMandateInput } from "./mandate";
 
@@ -13,7 +14,7 @@ export class WatchError extends Error {
   }
 }
 
-const OPEN = ["ACTIVE", "AWAITING_APPROVAL", "PURCHASING", "PAUSED"] as const;
+const OPEN = OPEN_STATUSES;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -25,8 +26,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * - If the limit is already ≥ today's price, sets limitJustRaised so the guard
  *   ASKs instead of buying on the first check ("This would buy now").
  *
- * Day 3 puts PayPal Vault consent in front of this; until a vault token is
- * stored, lib/purchase.ts cannot capture anything.
+ * - Reserves maxPrice from the DropCart Budget (lib/budget.ts); refuses with
+ *   a plain-English message when it doesn't fit.
+ *
+ * Payment is separate: until the user connects PayPal (Vault, see
+ * app/api/paypal/vault), lib/purchase.ts stops at NO_PAYMENT_METHOD and
+ * charges nothing.
  */
 export async function createWatch(userId: string, input: ConfirmMandateInput) {
   const db = getDb();
@@ -58,62 +63,70 @@ export async function createWatch(userId: string, input: ConfirmMandateInput) {
     );
   }
 
-  const wouldBuyNow = input.maxPrice >= quote.price;
+  const priceNow: number = quote.price;
+  const wouldBuyNow = input.maxPrice >= priceNow;
   const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
 
-  const watch = await db.watch.create({
-    data: {
-      userId,
-      likedItemId: likedItem.id,
-      channel3ProductId: quote.productId,
-      variant: quote.variant,
-      merchantUrl: quote.merchantUrl,
-      status: "ACTIVE",
-      limitJustRaised: wouldBuyNow,
-      mandate: {
-        create: {
-          maxPrice: input.maxPrice,
-          expiresAt: new Date(Date.now() + input.expiresInDays * DAY_MS),
-          mode: input.mode,
-          // Empty = any store: DropCart is merchant of record, so a drop at
-          // any Channel3 store counts. The guard enforces a list when set.
-          allowedMerchants: [],
+  // Reserve the limit from the DropCart Budget, atomically per user.
+  const watch = await db.$transaction(async (tx) => {
+    await lockUserBudget(tx, userId);
+    const check = canReserve(await getBudget(userId, tx), input.maxPrice);
+    if (!check.ok) throw new WatchError(check.message, 409);
+
+    return tx.watch.create({
+      data: {
+        userId,
+        likedItemId: likedItem.id,
+        channel3ProductId: quote.productId,
+        variant: quote.variant,
+        merchantUrl: quote.merchantUrl,
+        status: "ACTIVE",
+        limitJustRaised: wouldBuyNow,
+        mandate: {
+          create: {
+            maxPrice: input.maxPrice,
+            expiresAt: new Date(Date.now() + input.expiresInDays * DAY_MS),
+            mode: input.mode,
+            // Empty = any store: DropCart is merchant of record, so a drop at
+            // any Channel3 store counts. The guard enforces a list when set.
+            allowedMerchants: [],
+          },
+        },
+        priceChecks: {
+          create: { price: priceNow, inStock: quote.inStock, variant: quote.variant },
+        },
+        auditLogs: {
+          create: [
+            {
+              actor: "USER",
+              action: "MANDATE_CONFIRMED",
+              details: {
+                maxPrice: input.maxPrice,
+                variant: quote.variant,
+                expiresInDays: input.expiresInDays,
+                mode: input.mode,
+                agentFilledFields: input.agentFilled,
+              },
+            },
+            {
+              actor: "SYSTEM",
+              action: "WATCH_CREATED",
+              details: {
+                productId: quote.productId,
+                priceAtStart: priceNow,
+                inStock: quote.inStock,
+                wouldBuyNow,
+              },
+            },
+          ],
         },
       },
-      priceChecks: {
-        create: { price: quote.price, inStock: quote.inStock, variant: quote.variant },
-      },
-      auditLogs: {
-        create: [
-          {
-            actor: "USER",
-            action: "MANDATE_CONFIRMED",
-            details: {
-              maxPrice: input.maxPrice,
-              variant: quote.variant,
-              expiresInDays: input.expiresInDays,
-              mode: input.mode,
-              agentFilledFields: input.agentFilled,
-            },
-          },
-          {
-            actor: "SYSTEM",
-            action: "WATCH_CREATED",
-            details: {
-              productId: quote.productId,
-              priceAtStart: quote.price,
-              inStock: quote.inStock,
-              wouldBuyNow,
-            },
-          },
-        ],
-      },
-    },
+    });
   });
 
   return {
     watchId: watch.id,
-    priceNow: quote.price,
+    priceNow,
     wouldBuyNow,
     paymentReady: Boolean(user.paypalVaultToken),
   };

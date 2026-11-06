@@ -9,6 +9,7 @@ import {
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { buildAgentTools, systemPrompt } from "@/lib/agent-tools";
+import { getBudget } from "@/lib/budget";
 import { getApiUser } from "@/lib/auth";
 import { getProduct } from "@/lib/channel3";
 import { getDb } from "@/lib/db";
@@ -41,8 +42,11 @@ export async function POST(req: Request) {
   });
   if (!likedItem) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const product = await getProduct(likedItem.channel3ProductId).catch(() => null);
-  const ctx = { likedItem, product };
+  const [product, budget] = await Promise.all([
+    getProduct(likedItem.channel3ProductId).catch(() => null),
+    getBudget(user.id).catch(() => null),
+  ]);
+  const ctx = { likedItem, product, budgetFree: budget?.available };
 
   const result = streamText({
     model: getModel(),

@@ -45,7 +45,7 @@ async function main() {
 
   await db.user.upsert({
     where: { id: userId },
-    create: { id: userId, email: DEMO_EMAIL, monthlyBudget: 500 },
+    create: { id: userId, email: DEMO_EMAIL, budget: 500 },
     update: { email: DEMO_EMAIL },
   });
 
