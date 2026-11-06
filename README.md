@@ -3,10 +3,14 @@
 **Like it now, tell an AI agent your price, approve PayPal once. DropCart buys it when the price drops, and only inside the mandate you approved.**
 
 - **Live demo:** https://drop-cart-tan.vercel.app (sign in with **Use demo account**)
-- **Demo video:** _TODO (Day 6: YouTube link, under 3 min)_
+- **Demo video:** https://youtu.be/WUVeY6K1tlY (2:57)
 - **Repository:** https://github.com/KartikMantri/DropCart
 
 > Built for the PayPal AI Hackathon 2026. **Sandbox money only.** No real payments are ever made.
+
+[![Watch the 3-minute demo on YouTube](https://img.youtube.com/vi/WUVeY6K1tlY/hqdefault.jpg)](https://youtu.be/WUVeY6K1tlY)
+
+*Watch the demo (2:57): stock-market GTT → AI agent mandate → Connect PayPal → price drop → PayPal capture → refund → real sandbox transactions.*
 
 ![DropCart home: price trackers above the Channel3 catalogue](docs/screenshots/home.jpg)
 
@@ -328,6 +332,7 @@ Started from scratch on Nov 6, 2026, within the hackathon window (after Oct 1, 2
 - **Day 3:** PayPal Vault (setup token → payment token), merchant-initiated order + capture with `PayPal-Request-Id`, and refunds, all written with ContextMatic; `lib/purchase.ts` (guard twice, atomic claim, live re-check, hard cap); the guard with full branch coverage; the DropCart Budget (each tracker reserves its limit).
 - **Day 4:** scheduled checks (`/api/cron/check` + GitHub Actions), demo-mode Check now and Drop & check, approvals (Buy it / Not now), pause/resume/stop, editing a mandate from chat (a raised limit must fit the budget), the tracker page (receipt, price history, decision log, Undo), the home Price trackers row and the Inbox.
 - **Day 5:** deployed to Vercel (`sin1`) with a health check and the GitHub Actions scheduler (hardened to fail on redirects); Row Level Security on every table; "price tracker" wording throughout; a demo reset script; README with screenshots.
+- **Day 6:** demo video recorded end to end against the real app and PayPal sandbox (buyer connects PayPal, guard skip and buy, refund, PayPal activity); fixed the PayPal return page so a repeated redirect no longer shows an error.
 
 ## Planned
 
