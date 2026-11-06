@@ -43,3 +43,6 @@ next-env.d.ts
 
 # prisma client (generated on install)
 /generated/
+
+# Local narration recordings for the demo video (not part of the app)
+/Audios/
