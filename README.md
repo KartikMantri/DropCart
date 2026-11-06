@@ -165,7 +165,7 @@ sequenceDiagram
 - Repeating the call with the same `PayPal-Request-Id` returns the same order and capture.
 - The refund completes.
 
-**Sandbox setup notes:** Vault v3 requires a **US** sandbox *business* account, and **Save payment methods** enabled on the REST app. With an Indian business account, setup tokens return `403 NOT_AUTHORIZED`.
+**Sandbox setup notes:** saving PayPal with Vault v3 needs a sandbox *business* account in a **supported country** (35 countries and territories: the US, Canada, Australia, Japan, Singapore, Hong Kong, China and 28 European countries; India isn't one). It also needs **Save payment methods** (Vault) enabled on the REST app. With an Indian business account, the token gets only v1 vault scopes and setup tokens return `403 NOT_AUTHORIZED`. DropCart's sandbox merchant is a US business account. See PayPal's [save without purchase](https://developer.paypal.com/api/payment-tokens/save-without-purchase/paypal) guide.
 
 ### Channel3
 
@@ -220,7 +220,7 @@ claude plugin install context-matic@apimatic --scope user
 **Where it needed checking:**
 - **Enums:** `tsc` flagged two string literals (`'MERCHANT'`, `'SETUP_TOKEN'`) where SDK 2.5.0 requires enums (`PaypalPaymentTokenUsageType.Merchant`, `VaultTokenRequestType.SetupToken`).
 - **A field from the wrong model:** the Orders sample put `paymentType` on a PayPal-wallet stored credential. `model_search` showed that field exists only on `CardStoredCredential`, so it was removed.
-- **Open questions settled in the sandbox:** vault-id orders do auto-capture (`COMPLETED` on create), and the `captureOrder` fallback stays as a safety net. The 403 turned out to be a non-US sandbox business account.
+- **Open questions settled in the sandbox:** vault-id orders do auto-capture (`COMPLETED` on create), and the `captureOrder` fallback stays as a safety net. The 403 turned out to be a sandbox business account in a country Vault v3 doesn't support (India), confirmed by PayPal developer support on the hackathon Discord.
 
 The full prompt-by-prompt log is in [`docs/contextmatic.md`](docs/contextmatic.md).
 
@@ -245,7 +245,7 @@ Both are called through `lib/llm.ts`, which exposes a single AI SDK model. That 
 
 ## Run it locally
 
-**Prerequisites:** Node.js 20 or later, a free Supabase project, a PayPal developer account with a **US** sandbox business account, and free API keys (see the table below).
+**Prerequisites:** Node.js 20 or later, a free Supabase project, a PayPal developer account with a sandbox business account in a Vault-supported country (e.g. the US), and free API keys (see the table below).
 
 ```bash
 git clone https://github.com/KartikMantri/DropCart.git
@@ -267,7 +267,7 @@ npm run dev                   # http://localhost:3000
 | `GROQ_API_KEY` | Primary LLM | [console.groq.com/keys](https://console.groq.com/keys) |
 | `GEMINI_API_KEY` | Fallback LLM | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
 | `CHANNEL3_API_KEY` | Product catalogue | [trychannel3.com](https://trychannel3.com) dashboard |
-| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | Sandbox REST app on a **US** business account, with **Save payment methods** on | [developer.paypal.com](https://developer.paypal.com) → Apps & Credentials → Sandbox |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | Sandbox REST app on a business account in a Vault-supported country (e.g. the US), with **Save payment methods** on | [developer.paypal.com](https://developer.paypal.com) → Apps & Credentials → Sandbox |
 | `PAYPAL_ENV` | Must be `sandbox` | — |
 | `CRON_SECRET` | Bearer token for `/api/cron/check` (at least 16 characters) | `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `DEMO_MODE` | `true` enables "Check now" and "Drop & check" | — |
