@@ -112,7 +112,7 @@ The full log is in [`docs/contextmatic.md`](docs/contextmatic.md).
 ## AI used
 
 - **Primary:** Groq, model `openai/gpt-oss-120b` (override with `GROQ_MODEL`).
-- **Fallback:** Google Gemini Flash, model `gemini-2.5-flash` (override with `GEMINI_MODEL`).
+- **Fallback:** Google Gemini Flash, model `gemini-3.8-flash` (override with `GEMINI_MODEL`).
 
 Both are called through `lib/llm.ts`, which exposes a single AI SDK model. That model tries Groq first and switches to Gemini on HTTP 429 (rate limit) or any other error. The fallback is unit-tested in `tests/llm.test.ts`.
 
@@ -184,7 +184,8 @@ Whenever overrides are active, the UI shows a red **DEMO MODE** badge, and price
 Started from scratch on Nov 6, 2026, within the hackathon window (after Oct 1, 2026).
 
 - **Day 1:** Next.js 16 and Tailwind v4 scaffold with the neo-brutalism design tokens; Prisma 7 schema on Supabase Postgres with a seed script; Supabase email/password auth with a login page and demo account; `lib/llm.ts` (Groq → Gemini fallback, unit-tested); `lib/channel3.ts` (cached search, featured grid, free live quotes, variant resolution).
-- _Day 2–5: TODO._
+- **Day 2:** Home FEATURED grid (up to 50 products, cached) and the full-catalogue search page; heart button and wishlist; agent chat with Channel3 tools (`search_products`, `get_product`, `list_variants`, `draft_mandate`) beside a mandate form the agent fills in ("Filled by agent" tags). The user edits and confirms it, and the server checks the variant and today's price against Channel3 before creating the watch.
+- _Day 3–5: TODO._
 
 ## Planned
 

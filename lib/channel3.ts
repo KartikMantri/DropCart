@@ -205,12 +205,21 @@ type CacheEntry = { products: CatalogueProduct[]; fetchedAt: Date };
 const memoryCache = new Map<string, CacheEntry>();
 const inFlight = new Map<string, Promise<CatalogueProduct[]>>();
 
-async function readCache(key: string): Promise<CacheEntry | null> {
+async function readCache(key: string, ttlMs: number): Promise<CacheEntry | null> {
+  // Fresh entry already in this server process → skip the database round trip.
+  const local = memoryCache.get(key);
+  if (local && Date.now() - local.fetchedAt.getTime() < ttlMs) return local;
+
   if (hasDatabase()) {
     try {
       const row = await getDb().catalogueCache.findUnique({ where: { query: key } });
       if (row) {
-        return { products: row.products as unknown as CatalogueProduct[], fetchedAt: row.fetchedAt };
+        const entry = {
+          products: row.products as unknown as CatalogueProduct[],
+          fetchedAt: row.fetchedAt,
+        };
+        memoryCache.set(key, entry);
+        return entry;
       }
       return null;
     } catch (err) {
@@ -246,7 +255,7 @@ async function cached(
   ttlMs: number,
   fetcher: () => Promise<CatalogueProduct[]>,
 ): Promise<{ products: CatalogueProduct[]; fetchedAt: Date; fromCache: boolean }> {
-  const hit = await readCache(key);
+  const hit = await readCache(key, ttlMs);
   if (hit && Date.now() - hit.fetchedAt.getTime() < ttlMs) {
     return { ...hit, fromCache: true };
   }

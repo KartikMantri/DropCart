@@ -21,6 +21,7 @@
     "@ai-sdk/google": "^4.0.112",
     "@ai-sdk/groq": "^4.0.77",
     "@ai-sdk/provider": "^4.0.36",
+    "@ai-sdk/react": "^4.0.167",
     "@channel3/sdk": "^4.8.0",
     "@paypal/paypal-server-sdk": "^2.5.0",
     "@prisma/adapter-pg": "^7.10.1",

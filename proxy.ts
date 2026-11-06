@@ -38,10 +38,10 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // getUser() validates the token with Supabase and refreshes it if needed.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() refreshes an expired session and verifies the JWT signature
+  // against the project's signing keys (no Auth-server call per request).
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? data.claims : null;
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));

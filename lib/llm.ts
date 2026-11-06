@@ -25,7 +25,7 @@ import { optionalEnv } from "./env";
  */
 
 export const GROQ_MODEL = optionalEnv("GROQ_MODEL") ?? "openai/gpt-oss-120b";
-export const GEMINI_MODEL = optionalEnv("GEMINI_MODEL") ?? "gemini-2.5-flash";
+export const GEMINI_MODEL = optionalEnv("GEMINI_MODEL") ?? "gemini-3.8-flash";
 
 export type ProviderName = "groq" | "gemini";
 
