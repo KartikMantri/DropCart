@@ -183,7 +183,7 @@ export default async function WatchPage({ params }: PageProps<"/watches/[id]">) 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <section>
             <h2 className="nb-section-title">Prices recorded</h2>
-            <p className="mb-3 text-sm">Only prices DropCart checked since this watch began.</p>
+            <p className="mb-3 text-sm">Only prices DropCart checked since this tracker began.</p>
             <div className="nb-card overflow-x-auto">
               <table className="w-full font-mono text-sm">
                 <thead className="border-b-[3px] border-ink bg-yellow text-left uppercase">

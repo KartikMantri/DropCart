@@ -2,7 +2,7 @@
 
 This is a log of the PayPal SDK code written with the **APIMatic ContextMatic** plugin active in the coding agent (Claude Code). Each entry records the prompt, what ContextMatic returned, and what was kept.
 
-## Setup (Nov 7, 2026)
+## Setup (Nov 6, 2026)
 
 ContextMatic is a free Claude Code plugin from APIMatic. It runs a remote MCP server (`https://chatbotapi.apimatic.io/mcp/plugins`) that gives the agent version-aware context for the PayPal Server SDK: real method names, request and response models, and code samples, instead of whatever the model remembers from training.
 
