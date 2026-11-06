@@ -43,7 +43,7 @@ export default async function WishlistPage({ searchParams }: PageProps<"/wishlis
 
   return (
     <>
-      <SiteHeader email={user.email} />
+      <SiteHeader email={user.email} userId={user.id} />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10">
         <h2 className="nb-section-title">Wishlist</h2>
 
@@ -98,9 +98,14 @@ export default async function WishlistPage({ searchParams }: PageProps<"/wishlis
 
                   <div className="col-span-2 flex items-center gap-3 md:col-span-1 md:justify-end">
                     {watch ? (
-                      <Link href={`/chat/${item.id}`} className="nb-btn nb-btn-white">
-                        Talk to agent
-                      </Link>
+                      <>
+                        <Link href={`/watches/${watch.id}`} className="nb-btn">
+                          {watch.status === "AWAITING_APPROVAL" ? "Approve" : "View watch"}
+                        </Link>
+                        <Link href={`/chat/${item.id}`} className="nb-btn nb-btn-white">
+                          Edit
+                        </Link>
+                      </>
                     ) : (
                       <Link href={`/chat/${item.id}`} className="nb-btn">
                         Watch this

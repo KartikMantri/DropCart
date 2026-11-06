@@ -38,15 +38,38 @@ export async function POST(req: Request) {
 
   const likedItem = await getDb().likedItem.findFirst({
     where: { id: parsed.data.likedItemId, userId: user.id },
-    select: { id: true, channel3ProductId: true, title: true },
+    select: {
+      id: true,
+      channel3ProductId: true,
+      title: true,
+      watches: {
+        where: { status: { in: ["ACTIVE", "AWAITING_APPROVAL", "PAUSED"] } },
+        include: { mandate: true },
+        take: 1,
+      },
+    },
   });
   if (!likedItem) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const watch = likedItem.watches[0];
   const [product, budget] = await Promise.all([
     getProduct(likedItem.channel3ProductId).catch(() => null),
-    getBudget(user.id).catch(() => null),
+    getBudget(user.id, undefined, watch?.id).catch(() => null),
   ]);
-  const ctx = { likedItem, product, budgetFree: budget?.available };
+  const ctx = {
+    likedItem,
+    product,
+    budgetFree: budget?.available,
+    currentMandate: watch?.mandate
+      ? {
+          maxPrice: watch.mandate.maxPrice.toNumber(),
+          variant: watch.variant,
+          mode: watch.mandate.mode,
+          expiresAt: watch.mandate.expiresAt,
+          status: watch.status,
+        }
+      : undefined,
+  };
 
   const result = streamText({
     model: getModel(),

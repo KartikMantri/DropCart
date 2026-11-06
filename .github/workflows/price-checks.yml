@@ -1,0 +1,30 @@
+# Calls DropCart's scheduled price check every 6 hours.
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   DROPCART_URL  e.g. https://dropcart.vercel.app (no trailing slash)
+#   CRON_SECRET   same value as the app's CRON_SECRET
+name: Price checks
+
+on:
+  schedule:
+    - cron: "17 */6 * * *" # every 6 hours, off the hour
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DROPCART_URL: ${{ secrets.DROPCART_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Skip until the app is deployed
+        if: ${{ env.DROPCART_URL == '' }}
+        run: echo "DROPCART_URL secret not set yet; skipping."
+      - name: POST /api/cron/check
+        if: ${{ env.DROPCART_URL != '' }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 90 \
+            -X POST "$DROPCART_URL/api/cron/check" \
+            -H "Authorization: Bearer $CRON_SECRET"

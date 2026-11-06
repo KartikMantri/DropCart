@@ -2,6 +2,8 @@
  * Day-3 sandbox smoke test for lib/paypal.ts. Never touches the database.
  *
  *   npm run test:paypal                  create a setup token, print approve link
+ *   npm run test:paypal -- --saved       charge + refund the payment token the
+ *                                        app saved via "Connect PayPal"
  *   npm run test:paypal -- <setupToken>  after approving: vault it, charge
  *                                        $1.00 twice with the same
  *                                        PayPal-Request-Id (must be one
@@ -30,7 +32,20 @@ async function main() {
     return;
   }
 
-  const token = await paypal.exchangeSetupToken(setupTokenId);
+  let token: { paymentTokenId: string; customerId: string | null };
+  if (setupTokenId === "--saved") {
+    const { getDb } = await import("../lib/db");
+    const user = await getDb().user.findFirst({
+      where: { paypalVaultToken: { not: null } },
+      select: { paypalVaultToken: true, paypalCustomerId: true },
+    });
+    await getDb().$disconnect();
+    if (!user?.paypalVaultToken) throw new Error('No saved PayPal token yet. Use "Connect PayPal" in the app first.');
+    token = { paymentTokenId: user.paypalVaultToken, customerId: user.paypalCustomerId };
+    console.log("using the token saved by the app");
+  } else {
+    token = await paypal.exchangeSetupToken(setupTokenId);
+  }
   console.log("payment token:", token.paymentTokenId, "customer:", token.customerId);
 
   const requestId = `smoke:${setupTokenId}:${Date.now()}`;

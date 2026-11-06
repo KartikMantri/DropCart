@@ -16,7 +16,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
   return (
     <>
-      <SiteHeader email={user.email} query={q} />
+      <SiteHeader email={user.email} userId={user.id} query={q} />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10">
         {q.length < 2 ? (
           <div className="nb-card p-8 font-bold">

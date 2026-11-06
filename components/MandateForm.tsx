@@ -31,6 +31,7 @@ export function MandateForm({
   error,
   onChange,
   onConfirm,
+  editing = false,
 }: {
   draft: MandateDraft;
   agentFields: Set<MandateField>;
@@ -43,6 +44,7 @@ export function MandateForm({
   error: string | null;
   onChange: <F extends MandateField>(field: F, value: MandateDraft[F]) => void;
   onConfirm: () => void;
+  editing?: boolean;
 }) {
   const choosable = variants.filter((d) => d.values.filter((v) => v.exists).length > 0);
   const wouldBuyNow = draft.maxPrice != null && priceNow != null && draft.maxPrice >= priceNow;
@@ -63,7 +65,7 @@ export function MandateForm({
       }}
     >
       <div className="-mx-5 -mt-5 border-b-[3px] border-ink bg-yellow px-5 py-3">
-        <h2 className="text-xl font-bold uppercase">Mandate</h2>
+        <h2 className="text-xl font-bold uppercase">{editing ? "Edit mandate" : "Mandate"}</h2>
         <p className="text-sm font-medium">DropCart can only buy inside these limits.</p>
       </div>
 
@@ -201,10 +203,10 @@ export function MandateForm({
       )}
 
       <button type="submit" className="nb-btn w-full text-lg" disabled={!canConfirm}>
-        {submitting ? "Confirming…" : "Confirm mandate"}
+        {submitting ? "Saving…" : editing ? "Save changes" : "Confirm mandate"}
       </button>
       <p className="text-center font-mono text-xs uppercase">
-        Reserves this limit from your DropCart Budget
+        {editing ? "A higher limit must fit your DropCart Budget" : "Reserves this limit from your DropCart Budget"}
       </p>
     </form>
   );

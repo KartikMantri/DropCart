@@ -23,8 +23,10 @@ export type AgentContext = {
   likedItem: { id: string; channel3ProductId: string; title: string };
   /** Live product for the liked item (null if Channel3 no longer has it). */
   product: CatalogueProduct | null;
-  /** DropCart Budget still free for new watches (USD); undefined if unknown. */
+  /** DropCart Budget still free for this mandate (USD); undefined if unknown. */
   budgetFree?: number;
+  /** Set when the user is editing an existing watch. */
+  currentMandate?: { maxPrice: number; variant: string | null; mode: string; expiresAt: Date; status: string };
 };
 
 const variantInput = z
@@ -190,7 +192,8 @@ export function buildAgentTools(ctx: AgentContext) {
       },
     }),
 
-    // update_mandate(watchId, changes) lands with mandate editing on Day 4.
+    // Editing reuses draft_mandate: the form PATCHes the watch instead of
+    // creating one (see components/ChatWorkspace.tsx, editing mode).
   };
 }
 
@@ -223,7 +226,16 @@ export function systemPrompt(ctx: AgentContext): string {
       : "",
     variants.length > 0 ? `- variant options: ${JSON.stringify(variants)}` : "- no variants",
     `- today is ${new Date().toISOString().slice(0, 10)}`,
-    ctx.budgetFree != null ? `- DropCart Budget free for new watches: $${Math.max(0, ctx.budgetFree).toFixed(2)}` : "",
+    ctx.budgetFree != null ? `- DropCart Budget free for this mandate: $${Math.max(0, ctx.budgetFree).toFixed(2)}` : "",
+    ...(ctx.currentMandate
+      ? [
+          "",
+          "EDITING AN EXISTING WATCH",
+          `- current mandate: max $${ctx.currentMandate.maxPrice}, variant ${ctx.currentMandate.variant ?? "default"}, mode ${ctx.currentMandate.mode}, expires ${ctx.currentMandate.expiresAt.toISOString().slice(0, 10)}, status ${ctx.currentMandate.status}`,
+          "- The user is changing this watch. Call draft_mandate with the FULL updated mandate: copy every field they didn't mention from the current mandate (expiresInDays = days left until the current expiry unless they change it).",
+          "- Then tell them to check the form and press Save changes. Raising the limit to or above today's price means DropCart will ask before buying.",
+        ]
+      : []),
   ]
     .filter(Boolean)
     .join("\n");

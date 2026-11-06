@@ -5,15 +5,17 @@ import { getLikedProductIds } from "@/lib/likes";
 import { ProductGrid } from "@/components/ProductCard";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import { GridSkeleton } from "@/components/GridSkeleton";
+import { WatchingRow } from "@/components/WatchingRow";
 
-// The WATCHING row (shown first when the user has watches) lands on Day 4.
+// WATCHING row first (when the user has watches), then the featured grid.
 export default async function Home() {
   const user = await requireUser();
 
   return (
     <>
-      <SiteHeader email={user.email} />
+      <SiteHeader email={user.email} userId={user.id} />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10">
+        <WatchingRow userId={user.id} />
         <h2 className="nb-section-title">Featured</h2>
         <Suspense fallback={<GridSkeleton />}>
           <FeaturedGrid userId={user.id} />

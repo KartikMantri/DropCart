@@ -37,6 +37,15 @@ All prompts used `language: typescript`, `key: paypal` (resolved with `fetch_api
 | 4 | Nov 6 | Refunds | `ask`: "fully refund a captured payment with refundCapturedPayment, PayPal-Request-Id, read refund id and status" | Kept as given: no body means a full refund; `paypalRequestId: refund:<purchaseId>`. → `refundCapture` |
 | 5 | Nov 6 | Sandbox 403 | `ask`: "createSetupToken returns 403 NOT_AUTHORIZED … token has v1 vault/credit-card scopes but no vault/payment-tokens scope. What app setting is required?" | ContextMatic couldn't answer (not in its SDK docs). Diagnosed by listing the OAuth token's scopes: the app was missing the v3 Vault feature. Fix: enable Vault on the sandbox app in the PayPal Developer Dashboard. |
 
+### Verified against the live sandbox (Nov 6)
+
+Run with `npm run test:paypal -- --saved` after approving through the app's **Connect PayPal** button:
+
+- Vault: the setup token was approved through the app and exchanged for a payment token, which was saved on the user.
+- Charge with no buyer present: `createOrder` with `vaultId` came back **COMPLETED with the capture attached**. That settles the open question in #3: PayPal captures vault-id orders immediately, and the `captureOrder` fallback isn't needed in sandbox.
+- Idempotency: a second `createOrder` with the same `PayPal-Request-Id` returned the same order and capture ids (one charge).
+- Refund: `refundCapturedPayment` returned COMPLETED.
+
 ### What ContextMatic got right, and where it needed checking
 
 - Method names, parameter names and response paths were all correct for SDK 2.5.0. Nothing was guessed from memory.

@@ -21,8 +21,9 @@ Price alerts arrive when you can't act on them. By the time you open the email, 
 2. **Like** products to save them to your wishlist.
 3. **Tell the agent your limit**, for example *"Get it under $280, black, for 30 days."* The agent fills in a mandate form (max price, variant, expiry, mode), and you edit and confirm it.
 4. **Approve PayPal once.** A sandbox Vault consent saves PayPal as your payment method.
-5. **Auto-buy inside the mandate.** DropCart re-checks prices on a schedule. When the live price is under your limit, for the right variant and in stock, it captures the PayPal payment and shows a receipt explaining why it bought.
-6. **Undo.** One tap issues a PayPal refund.
+5. **Stay inside your DropCart Budget.** Each watch reserves its max price from a budget you top up (no money is held). A watch that doesn't fit is refused with a clear message.
+6. **Auto-buy inside the mandate.** DropCart re-checks prices on a schedule. When the live price is under your limit, for the right variant and in stock, it captures the PayPal payment and shows a receipt explaining why it bought.
+7. **Undo.** One tap issues a PayPal refund.
 
 ## How it works
 
@@ -56,7 +57,7 @@ The guard is a pure function with unit tests covering every branch. It applies t
 | 4 | Live variant ≠ watched variant | SKIP (variant) |
 | 5 | Out of stock | SKIP (stock) |
 | 6 | Price > mandate max | SKIP (price) |
-| 7 | This month's spend + price > budget | ASK (budget) |
+| 7 | Spent + price > DropCart Budget (safety net; watches already reserve their limit) | ASK (budget) |
 | 8 | Mandate mode is `ASK_FIRST` | ASK (mode) |
 | 9 | Limit was just raised above today's price | ASK (would buy now) |
 | — | Otherwise | **BUY** |
@@ -71,11 +72,11 @@ Sandbox only (`PAYPAL_ENV=sandbox`). DropCart stores only the PayPal vault payme
 
 | API | Where |
 |---|---|
-| **Vault**: save PayPal as a payment method | `lib/paypal.ts`, `/api/paypal/vault/setup-token`, `/api/paypal/vault/payment-token` |
-| **Orders**: create and capture against the vault token | `lib/purchase.ts` |
-| **Refunds**: Undo | `/api/purchases/[id]/refund` |
+| **Vault v3**: setup token → payment token (save PayPal, merchant-initiated) | `lib/paypal.ts`, `/api/paypal/vault/start` → PayPal → `/api/paypal/vault/return` |
+| **Orders v2**: create (+ capture) against the vault token, `PayPal-Request-Id` idempotency | `lib/paypal.ts` `chargeVaultedPayment`, called only from `lib/purchase.ts` |
+| **Payments v2 refunds**: Undo | `/api/purchases/[id]/refund` → `lib/purchase.ts` `refundPurchase` |
 
-_TODO (Day 3): confirm the final API list._
+Verified live in the sandbox: a vault-id order is captured on create (status `COMPLETED`), and repeating the call with the same `PayPal-Request-Id` returns the same capture. Vault v3 needs a **US** sandbox business account with **Save payment methods** enabled on the app.
 
 ### Channel3
 
@@ -102,12 +103,12 @@ All of these calls go through `lib/channel3.ts`.
 
 ### APIMatic (ContextMatic)
 
-**Built with ContextMatic.** _TODO (Day 3):_
-- How it was installed in the coding agent.
-- Which PayPal integrations it was used for (Vault, Orders, Refunds).
-- 2–3 example prompts and what it got right, for example using `@paypal/paypal-server-sdk` instead of the deprecated `paypal-rest-sdk`.
+**Built with ContextMatic.** All PayPal code in `lib/paypal.ts` was written with the APIMatic ContextMatic plugin in Claude Code (`fetch_api`, `ask`, `endpoint_search`, `model_search` against `@paypal/paypal-server-sdk`).
+- **Vault**, **Orders** and **Refunds** were each written from a ContextMatic `ask` answer, with exact method names, request and response paths, and `paypalRequestId`.
+- It also needed checking. `tsc` caught two string literals where SDK 2.5.0 needs enums, and a card-only `paymentType` field the sample had put on a PayPal-wallet stored credential. `model_search` confirmed the right shapes.
+- Where its sources didn't say (auto-capture, sandbox permissions), it said so instead of guessing.
 
-The full log is in [`docs/contextmatic.md`](docs/contextmatic.md).
+The full prompt log is in [`docs/contextmatic.md`](docs/contextmatic.md).
 
 ## AI used
 
@@ -150,7 +151,10 @@ npm run dev            # http://localhost:3000
 | `DEMO_MODE` | `true` enables "Check now" and the price override | — |
 
 Useful scripts:
-- `npm test`: unit tests (guard, LLM fallback).
+- `npm test`: unit tests (guard, budget, purchase flow, checks, PayPal hard cap, LLM fallback).
+- `npm run test:paypal`: live PayPal sandbox smoke test (`-- --saved` charges and refunds $1 on the token saved by Connect PayPal).
+- `npx tsx --conditions=react-server scripts/watch-report.ts`: read-only view of budgets and watches.
+- `npx tsx --conditions=react-server scripts/check-watch.ts --all`: run the scheduled check now.
 - `npm run test:channel3`: live Channel3 smoke test. Uses one search.
 - `npm run test:llm`: live Groq and Gemini smoke test.
 
@@ -167,7 +171,9 @@ These are sandbox and demo credentials only. No real money is ever involved.
 
 With `DEMO_MODE=true`, each watch gets:
 - **Check now**: runs a price check immediately instead of waiting for the 6-hourly schedule.
-- **Price override** (`POST /api/demo/price-override`): sets a fake live price for one watch, then runs a check, so the full drop → BUY → capture → receipt flow can be shown on demand.
+- **Price override** (`POST /api/demo/price-override`, "Drop & check" on the watch page): pretends the live price is a given amount for one check, so the full drop → BUY → capture → receipt flow can be shown on demand. Stock and variant stay real, the override also applies to the re-check right before payment, and the guard still applies every rule.
+
+The scheduled check is `POST /api/cron/check` with `Authorization: Bearer $CRON_SECRET`, called every 6 hours by `.github/workflows/price-checks.yml` (repository secrets `DROPCART_URL` and `CRON_SECRET`).
 
 Whenever overrides are active, the UI shows a red **DEMO MODE** badge, and price checks made with an override are stored with `isDemo = true`.
 
@@ -185,7 +191,9 @@ Started from scratch on Nov 6, 2026, within the hackathon window (after Oct 1, 2
 
 - **Day 1:** Next.js 16 and Tailwind v4 scaffold with the neo-brutalism design tokens; Prisma 7 schema on Supabase Postgres with a seed script; Supabase email/password auth with a login page and demo account; `lib/llm.ts` (Groq → Gemini fallback, unit-tested); `lib/channel3.ts` (cached search, featured grid, free live quotes, variant resolution).
 - **Day 2:** Home FEATURED grid (up to 50 products, cached) and the full-catalogue search page; heart button and wishlist; agent chat with Channel3 tools (`search_products`, `get_product`, `list_variants`, `draft_mandate`) beside a mandate form the agent fills in ("Filled by agent" tags). The user edits and confirms it, and the server checks the variant and today's price against Channel3 before creating the watch.
-- _Day 3–5: TODO._
+- **Day 3:** PayPal Vault (setup token → payment token), merchant-initiated order + capture with `PayPal-Request-Id`, refunds, all written with ContextMatic; `lib/purchase.ts` (guard twice, atomic claim, live re-check, hard cap); the guard with full branch coverage; the DropCart Budget (a running pot: each watch reserves its limit).
+- **Day 4:** scheduled checks (`/api/cron/check` + GitHub Actions), demo-mode Check now and price override, approvals (Buy it / Not now), pause/resume/stop, editing a mandate from chat (a raised limit must fit the budget), the watch page (receipt, price history, audit trail, Undo), the home WATCHING row and the inbox.
+- _Day 5: TODO._
 
 ## Planned
 

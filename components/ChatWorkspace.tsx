@@ -13,7 +13,10 @@ import { MandateForm } from "./MandateForm";
 
 export type AgentUIMessage = UIMessage<unknown, UIDataTypes, InferUITools<AgentTools>>;
 
-type Created = { watchId: string; priceNow: number; wouldBuyNow: boolean; paymentReady: boolean };
+type Created = { watchId: string; priceNow: number; wouldBuyNow: boolean; paymentReady: boolean; edited?: boolean };
+
+/** An existing watch being edited: the form starts from its mandate. */
+export type EditingWatch = { watchId: string; draft: MandateDraft };
 
 /** Agent chat + mandate form side by side. */
 export function ChatWorkspace({
@@ -23,6 +26,7 @@ export function ChatWorkspace({
   priceNow,
   available,
   llmReady,
+  editing,
 }: {
   likedItemId: string;
   variants: VariantDimension[];
@@ -30,11 +34,11 @@ export function ChatWorkspace({
   priceNow: number | null;
   available: number | null;
   llmReady: boolean;
+  editing?: EditingWatch;
 }) {
-  const [draft, setDraft] = useState<MandateDraft>(() => ({
-    ...emptyDraft(),
-    variant: initialVariant,
-  }));
+  const [draft, setDraft] = useState<MandateDraft>(() =>
+    editing ? editing.draft : { ...emptyDraft(), variant: initialVariant },
+  );
   const [agentFields, setAgentFields] = useState<Set<MandateField>>(new Set());
   const [notes, setNotes] = useState<string[]>([]);
   const [draftPrice, setDraftPrice] = useState<number | null>(priceNow);
@@ -92,11 +96,11 @@ export function ChatWorkspace({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await fetch("/api/watches", {
-        method: "POST",
+      const res = await fetch(editing ? `/api/watches/${editing.watchId}` : "/api/watches", {
+        method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          likedItemId,
+          ...(editing ? {} : { likedItemId }),
           maxPrice: draft.maxPrice,
           variant: draft.variant,
           expiresInDays: draft.expiresInDays,
@@ -106,10 +110,10 @@ export function ChatWorkspace({
       });
       const body = (await res.json().catch(() => ({}))) as Partial<Created> & { error?: string };
       if (!res.ok) {
-        setSubmitError(body.error ?? "Couldn't create the watch.");
+        setSubmitError(body.error ?? (editing ? "Couldn't update the mandate." : "Couldn't create the watch."));
         return;
       }
-      setCreated(body as Created);
+      setCreated(editing ? { ...(body as Created), paymentReady: true, edited: true } : (body as Created));
     } catch {
       setSubmitError("Network error. Try again.");
     } finally {
@@ -118,17 +122,23 @@ export function ChatWorkspace({
   };
 
   const base = priceNow != null ? Math.floor(priceNow * 0.85) : 100;
-  const suggestions = [
-    `Get it under $${base}, for 30 days`,
-    `Watch it for 2 weeks, max $${base}, ask me first`,
-    "What variants does it come in?",
-  ];
+  const suggestions = editing
+    ? [
+        `Raise my limit to $${Math.max(base, Math.round((editing.draft.maxPrice ?? base) * 1.1))}`,
+        "Ask me before buying",
+        "Keep watching for 30 more days",
+      ]
+    : [
+        `Get it under $${base}, for 30 days`,
+        `Watch it for 2 weeks, max $${base}, ask me first`,
+        "What variants does it come in?",
+      ];
 
   if (created) {
     return (
       <div className="nb-card flex flex-col items-start gap-4 p-8">
         <span className="nb-chip bg-yellow">Watching</span>
-        <h2 className="text-3xl font-bold uppercase">Mandate confirmed</h2>
+        <h2 className="text-3xl font-bold uppercase">{created.edited ? "Mandate updated" : "Mandate confirmed"}</h2>
         <p className="text-lg">
           DropCart is watching this at a limit of{" "}
           <span className="font-mono font-extrabold">{formatUsd(draft.maxPrice)}</span> (today{" "}
@@ -144,8 +154,11 @@ export function ChatWorkspace({
           </div>
         )}
         <div className="flex gap-3">
-          <Link href="/wishlist" className="nb-btn">
-            Back to wishlist
+          <Link href={`/watches/${created.watchId}`} className="nb-btn">
+            View watch
+          </Link>
+          <Link href="/wishlist" className="nb-btn nb-btn-white">
+            Wishlist
           </Link>
           <Link href="/" className="nb-btn nb-btn-white">
             Home
@@ -180,6 +193,7 @@ export function ChatWorkspace({
           error={submitError}
           onChange={onChange}
           onConfirm={onConfirm}
+          editing={Boolean(editing)}
         />
       </div>
     </div>

@@ -52,6 +52,13 @@ export async function attemptPurchase(opts: {
   /** The quote the scheduled check saw (stored as priceCheckId). */
   scheduledQuote: LiveQuote | null;
   approved?: boolean;
+  /**
+   * Where the pre-payment re-check gets its price. Defaults to a fresh
+   * Channel3 quote; demo mode passes the overridden price so the re-check
+   * sees the same (fake) drop. Checks made this way are stored isDemo.
+   */
+  liveQuote?: () => Promise<LiveQuote | null>;
+  isDemo?: boolean;
   now?: Date;
 }): Promise<PurchaseOutcome> {
   const db = getDb();
@@ -133,10 +140,16 @@ export async function attemptPurchase(opts: {
   try {
     // 4 — fresh live re-check, right before money moves
     const now = new Date();
-    const fresh = await getLiveQuote(watch.channel3ProductId, watch.variant);
+    const fresh = opts.liveQuote ? await opts.liveQuote() : await getLiveQuote(watch.channel3ProductId, watch.variant);
     const freshCheck = fresh
       ? await db.priceCheck.create({
-          data: { watchId: watch.id, price: fresh.price ?? 0, inStock: fresh.inStock, variant: fresh.variant },
+          data: {
+            watchId: watch.id,
+            price: fresh.price ?? 0,
+            inStock: fresh.inStock,
+            variant: fresh.variant,
+            isDemo: opts.isDemo ?? false,
+          },
         })
       : null;
     const second = applyApproval(evaluate(await guardInput("ACTIVE", toGuardLive(fresh), now)), approved);
@@ -195,6 +208,7 @@ export async function attemptPurchase(opts: {
             captureStatus: charge.status,
             requestId,
             liveCheckId: freshCheck?.id ?? null,
+            demoPrice: opts.isDemo ?? false,
           },
         },
       });
