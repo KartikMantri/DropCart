@@ -2,7 +2,7 @@
 
 **Like it now, tell an AI agent your price, approve PayPal once. DropCart buys it when the price drops, and only inside the mandate you approved.**
 
-- **Live demo:** _TODO (Day 5: Vercel URL)_
+- **Live demo:** https://drop-cart-tan.vercel.app (sign in with **Use demo account**)
 - **Demo video:** _TODO (Day 6: YouTube link, under 3 min)_
 
 ![DropCart home page](docs/screenshot-home.png) <!-- TODO Day 5 -->

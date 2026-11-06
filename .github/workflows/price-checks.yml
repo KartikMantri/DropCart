@@ -1,6 +1,6 @@
 # Calls DropCart's scheduled price check every 6 hours.
 # Repository secrets (Settings → Secrets and variables → Actions):
-#   DROPCART_URL  e.g. https://dropcart.vercel.app (no trailing slash)
+#   DROPCART_URL  e.g. https://drop-cart-tan.vercel.app
 #   CRON_SECRET   same value as the app's CRON_SECRET
 name: Price checks
 
@@ -25,6 +25,17 @@ jobs:
       - name: POST /api/cron/check
         if: ${{ env.DROPCART_URL != '' }}
         run: |
-          curl --fail-with-body --silent --show-error --max-time 90 \
-            -X POST "$DROPCART_URL/api/cron/check" \
-            -H "Authorization: Bearer $CRON_SECRET"
+          # Tolerate a trailing slash in the secret; a redirect would otherwise
+          # look like success (curl --fail only fails on 4xx/5xx).
+          url="${DROPCART_URL%%/}"
+          url="${url%/}"
+          case "$url" in https://*) ;; *) echo "::error::DROPCART_URL must start with https://"; exit 1 ;; esac
+          status=$(curl --silent --show-error --max-time 90 -o body.json -w '%{http_code}' \
+            -X POST "$url/api/cron/check" \
+            -H "Authorization: Bearer $CRON_SECRET")
+          cat body.json; echo
+          if [ "$status" != "200" ]; then
+            echo "::error::Expected HTTP 200, got $status (401 = CRON_SECRET mismatch, 3xx = wrong DROPCART_URL)"
+            exit 1
+          fi
+          grep -q '"checked"' body.json || { echo "::error::Unexpected response body"; exit 1; }
