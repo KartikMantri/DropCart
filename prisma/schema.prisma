@@ -1,0 +1,171 @@
+// DropCart data model (spec §6), Prisma ORM 7.
+// Connection URLs live in prisma.config.ts (CLI) and lib/db.ts (runtime
+// driver adapter) — Prisma 7 no longer reads them from this file.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WatchStatus {
+  ACTIVE
+  AWAITING_APPROVAL
+  PURCHASING
+  BOUGHT
+  REFUNDED
+  PAUSED
+  EXPIRED
+  CANCELLED
+}
+
+enum MandateMode {
+  AUTO
+  ASK_FIRST
+}
+
+enum PurchaseStatus {
+  CAPTURED
+  REFUNDED
+  FAILED
+}
+
+enum Actor {
+  USER
+  AGENT
+  GUARD
+  SYSTEM
+}
+
+model User {
+  id               String         @id // Supabase auth user id
+  email            String         @unique
+  paypalCustomerId String? // PayPal vault customer id
+  paypalVaultToken String? // PayPal vault payment token — never card data
+  monthlyBudget    Decimal        @default(500) @db.Decimal(10, 2)
+  likedItems       LikedItem[]
+  watches          Watch[]
+  notifications    Notification[]
+  createdAt        DateTime       @default(now())
+}
+
+model CatalogueCache {
+  id        String   @id @default(cuid())
+  query     String   @unique // cache key, e.g. "search:headphones" or "featured:v1"
+  products  Json
+  fetchedAt DateTime @default(now())
+}
+
+model LikedItem {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel3ProductId String
+  title             String
+  brand             String?
+  imageUrl          String?
+  merchantUrl       String?
+  merchantDomain    String?
+  priceWhenLiked    Decimal  @db.Decimal(10, 2)
+  currency          String   @default("USD")
+  likedAt           DateTime @default(now())
+  watches           Watch[]
+
+  @@unique([userId, channel3ProductId])
+}
+
+model Watch {
+  id                String       @id @default(cuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likedItemId       String
+  likedItem         LikedItem    @relation(fields: [likedItemId], references: [id], onDelete: Cascade)
+  channel3ProductId String
+  // Canonical variant key, e.g. "color=black" or "color=black;size=m".
+  // Null when the product has no variants. Built by lib/channel3.ts.
+  variant           String?
+  merchantUrl       String?
+  status            WatchStatus  @default(ACTIVE)
+  limitJustRaised   Boolean      @default(false)
+  mandate           Mandate?
+  priceChecks       PriceCheck[]
+  purchases         Purchase[]
+  auditLogs         AuditLog[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([status])
+  @@index([userId, status])
+}
+
+model Mandate {
+  id               String      @id @default(cuid())
+  watchId          String      @unique
+  watch            Watch       @relation(fields: [watchId], references: [id], onDelete: Cascade)
+  maxPrice         Decimal     @db.Decimal(10, 2)
+  currency         String      @default("USD")
+  expiresAt        DateTime
+  mode             MandateMode @default(AUTO)
+  allowedMerchants String[]
+  updatedAt        DateTime    @updatedAt
+}
+
+model PriceCheck {
+  id        String   @id @default(cuid())
+  watchId   String
+  watch     Watch    @relation(fields: [watchId], references: [id], onDelete: Cascade)
+  price     Decimal  @db.Decimal(10, 2)
+  inStock   Boolean
+  variant   String? // variant Channel3 actually resolved for this check
+  isDemo    Boolean  @default(false)
+  checkedAt DateTime @default(now())
+
+  @@index([watchId, checkedAt])
+}
+
+model Purchase {
+  id            String         @id @default(cuid())
+  watchId       String
+  watch         Watch          @relation(fields: [watchId], references: [id], onDelete: Cascade)
+  priceCheckId  String
+  // PayPal-Request-Id = `${watchId}:${priceCheckId}` — unique so a retry can
+  // never create a second capture for the same price check.
+  requestId     String         @unique
+  paypalOrderId String
+  captureId     String?
+  refundId      String?
+  amount        Decimal        @db.Decimal(10, 2)
+  currency      String         @default("USD")
+  status        PurchaseStatus
+  reason        String
+  createdAt     DateTime       @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  watchId   String
+  watch     Watch    @relation(fields: [watchId], references: [id], onDelete: Cascade)
+  actor     Actor
+  action    String // e.g. MANDATE_EDITED, VARIANT_CHANGED, GUARD_SKIP, BOUGHT
+  rule      String? // which guard rule decided
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([watchId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String // BOUGHT, APPROVAL_NEEDED, SKIPPED, REFUNDED
+  message   String
+  watchId   String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
