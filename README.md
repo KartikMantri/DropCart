@@ -296,10 +296,15 @@ The scheduler is a GitHub Actions workflow (`.github/workflows/price-checks.yml`
 | Account | Email | Password |
 |---|---|---|
 | DropCart demo app account | `demo@dropcart.dev` | `dropcart-demo-2026` |
+| PayPal sandbox buyer (personal) | `sb-wpq43i53751925@personal.example.com` | `6+e?4N0i` |
 
 ![Sign-in page with the Use demo account button](docs/screenshots/login.jpg)
 
-The demo account already has PayPal (sandbox) connected, so **Drop & check** works straight away. These are sandbox and demo credentials only. No real money is ever involved.
+The demo account already has PayPal (sandbox) connected, so **Drop & check** works straight away.
+
+**Verify the payments at PayPal:** sign in at [sandbox.paypal.com](https://www.sandbox.paypal.com) with the sandbox buyer login above. **Recent activity** lists every DropCart charge ("Automatic Payment") and every Undo ("Refund"), recorded by PayPal itself. The same buyer is used when connecting PayPal on a fresh account.
+
+These are sandbox and demo credentials only. No real money is ever involved.
 
 ## Demo mode
 
