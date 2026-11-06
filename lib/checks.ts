@@ -110,7 +110,7 @@ export async function runScheduledChecks(now = new Date()): Promise<SweepSummary
                 userId: w.userId,
                 watchId: w.id,
                 kind: "APPROVAL_NEEDED",
-                message: `A purchase of ${w.likedItem.title} was interrupted. Check your PayPal activity, then resume the watch.`,
+                message: `A purchase of ${w.likedItem.title} was interrupted. Check your PayPal activity, then resume the tracker.`,
               },
             }),
           ]
@@ -153,7 +153,7 @@ async function expireWatch(watchId: string, userId: string, title: string) {
     db.watch.update({ where: { id: watchId }, data: { status: "EXPIRED" } }),
     db.auditLog.create({ data: { watchId, actor: "SYSTEM", action: "EXPIRED", details: { reason: "The mandate has expired." } } }),
     db.notification.create({
-      data: { userId, watchId, kind: "SKIPPED", message: `Stopped watching ${title}: the mandate expired. Its budget is free again.` },
+      data: { userId, watchId, kind: "SKIPPED", message: `Stopped tracking ${title}: the mandate expired. Its budget is free again.` },
     }),
   ]);
 }
@@ -167,7 +167,7 @@ async function ownWatch(userId: string, watchId: string) {
     where: { id: watchId, userId },
     include: { priceChecks: { orderBy: { checkedAt: "desc" }, take: 1 } },
   });
-  if (!watch) throw new CheckError("Watch not found.", 404);
+  if (!watch) throw new CheckError("Tracker not found.", 404);
   return watch;
 }
 
@@ -195,11 +195,11 @@ export async function setWatchState(userId: string, watchId: string, action: Exc
   };
   const t = transitions[action];
   if (!t.from.includes(watch.status)) {
-    throw new CheckError(`Can't ${action} a watch that is ${watch.status.toLowerCase().replace("_", " ")}.`, 409);
+    throw new CheckError(`Can't ${action} a tracker that is ${watch.status.toLowerCase().replace("_", " ")}.`, 409);
   }
   // Conditional update: a cron run that just claimed the watch wins.
   const res = await db.watch.updateMany({ where: { id: watchId, status: watch.status }, data: { status: t.to } });
-  if (res.count === 0) throw new CheckError("The watch changed just now. Refresh and try again.", 409);
+  if (res.count === 0) throw new CheckError("The tracker changed just now. Refresh and try again.", 409);
   await db.auditLog.create({ data: { watchId, actor: "USER", action: t.audit } });
   return { status: t.to };
 }
@@ -208,7 +208,7 @@ export async function setWatchState(userId: string, watchId: string, action: Exc
 export async function checkNow(userId: string, watchId: string, overridePrice?: number) {
   const watch = await ownWatch(userId, watchId);
   if (watch.status !== "ACTIVE") {
-    throw new CheckError(`Only an active watch can be checked (this one is ${watch.status.toLowerCase().replace("_", " ")}).`, 409);
+    throw new CheckError(`Only an active tracker can be checked (this one is ${watch.status.toLowerCase().replace("_", " ")}).`, 409);
   }
   return runCheck(watchId, { overridePrice });
 }

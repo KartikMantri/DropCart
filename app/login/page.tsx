@@ -26,7 +26,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <ul className="flex flex-wrap gap-3 font-mono text-sm font-bold">
             <li className="nb-chip bg-pink">♥ Like</li>
             <li className="nb-chip bg-blue">Agent sets limit</li>
-            <li className="nb-chip bg-yellow">Watching</li>
+            <li className="nb-chip bg-yellow">Tracking</li>
             <li className="nb-chip bg-green">Bought</li>
           </ul>
         </section>

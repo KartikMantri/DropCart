@@ -11,7 +11,7 @@ import { ChatWorkspace, type EditingWatch } from "@/components/ChatWorkspace";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import { StatusChip } from "@/components/StatusChip";
 
-export const metadata: Metadata = { title: "Watch this — DropCart" };
+export const metadata: Metadata = { title: "Track price — DropCart" };
 
 const OPEN = ["ACTIVE", "AWAITING_APPROVAL", "PURCHASING", "PAUSED"] as const;
 
@@ -87,7 +87,7 @@ export default async function ChatPage({ params }: PageProps<"/chat/[likedItemId
         {!product ? (
           <div className="nb-card bg-red p-8 font-bold">
             Channel3 doesn&apos;t currently have an offer for this product, so it can&apos;t be
-            watched right now.
+            tracked right now.
           </div>
         ) : watch?.mandate && !editing ? (
           <div className="nb-card flex flex-col items-start gap-3 p-8">
@@ -100,12 +100,12 @@ export default async function ChatPage({ params }: PageProps<"/chat/[likedItemId
               <div className="nb-card flex flex-wrap items-center gap-3 p-4">
                 <StatusChip status={watch.status} />
                 <p>
-                  Watching at <b className="font-mono">{formatUsd(watch.mandate.maxPrice.toNumber())}</b>
+                  Tracking at <b className="font-mono">{formatUsd(watch.mandate.maxPrice.toNumber())}</b>
                   {watch.variant && <> for {watch.variant.replaceAll(";", ", ")}</>}, until{" "}
                   {watch.mandate.expiresAt.toISOString().slice(0, 10)}. Ask the agent or edit the form to change it.
                 </p>
                 <Link href={`/watches/${watch.id}`} className="nb-btn nb-btn-white ml-auto">
-                  View watch
+                  View tracker
                 </Link>
               </div>
             )}

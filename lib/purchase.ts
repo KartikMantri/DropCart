@@ -250,7 +250,7 @@ export async function attemptPurchase(opts: {
           userId: user.id,
           watchId: watch.id,
           kind: "SKIPPED",
-          message: `Couldn't buy ${watch.likedItem.title}: payment failed. Nothing was charged; still watching.`,
+          message: `Couldn't buy ${watch.likedItem.title}: payment failed. Nothing was charged; still tracking.`,
         },
       }),
     ]);

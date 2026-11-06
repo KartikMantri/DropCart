@@ -36,6 +36,7 @@ export function ChatPanel({
   suggestions,
   onSend,
   onStop,
+  editing = false,
 }: {
   messages: AgentUIMessage[];
   status: ChatStatus;
@@ -44,6 +45,8 @@ export function ChatPanel({
   suggestions: string[];
   onSend: (text: string) => void;
   onStop: () => void;
+  /** Editing an existing tracker: different greeting. */
+  editing?: boolean;
 }) {
   const [input, setInput] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
@@ -64,15 +67,16 @@ export function ChatPanel({
     <section className="nb-card flex min-h-[32rem] flex-col" aria-label="Agent chat">
       <div className="border-b-[3px] border-ink bg-blue px-5 py-3">
         <h2 className="text-xl font-bold uppercase">Agent</h2>
-        <p className="text-sm font-medium">Tell it your price, variant and how long to watch.</p>
+        <p className="text-sm font-medium">Tell it your price, variant and how long to track it.</p>
       </div>
 
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-5" aria-live="polite">
         {messages.length === 0 && (
           <div className="flex flex-col gap-3">
             <p className="max-w-[85%] self-start border-[3px] border-ink bg-blue px-3 py-2">
-              Hi! I can watch this for you and buy it if it drops to your price. What&apos;s the
-              most you&apos;d pay?
+              {editing
+                ? "I'm tracking this for you. Want to change the limit, variant, mode or how long I keep tracking?"
+                : "Hi! I can track this for you and buy it if it drops to your price. What's the most you'd pay?"}
             </p>
             <div className="flex flex-wrap gap-2">
               {suggestions.map((s) => (

@@ -132,7 +132,7 @@ export function MandateForm({
 
       <div>
         <label htmlFor="expiry" className="nb-label">
-          Watch for (days)
+          Track for (days)
           <AgentTag show={agentFields.has("expiresInDays")} />
         </label>
         <input

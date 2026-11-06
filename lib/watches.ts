@@ -68,7 +68,7 @@ export async function createWatch(userId: string, input: ConfirmMandateInput) {
   });
   if (!likedItem) throw new WatchError("Wishlist item not found.", 404);
   if (likedItem.watches.length > 0) {
-    throw new WatchError("DropCart is already watching this item.", 409);
+    throw new WatchError("DropCart is already tracking this item.", 409);
   }
 
   const { quote, priceNow } = await quoteForVariant(likedItem.channel3ProductId, input.variant);
@@ -155,9 +155,9 @@ export async function editWatch(userId: string, watchId: string, input: EditMand
     where: { id: watchId, userId },
     include: { mandate: true, likedItem: { select: { channel3ProductId: true } } },
   });
-  if (!watch?.mandate) throw new WatchError("Watch not found.", 404);
+  if (!watch?.mandate) throw new WatchError("Tracker not found.", 404);
   if (!(EDITABLE as readonly string[]).includes(watch.status)) {
-    throw new WatchError(`A ${watch.status.toLowerCase()} watch can't be edited.`, 409);
+    throw new WatchError(`A ${watch.status.toLowerCase()} tracker can't be edited.`, 409);
   }
   const mandate = watch.mandate;
 
@@ -193,7 +193,7 @@ export async function editWatch(userId: string, watchId: string, input: EditMand
         merchantUrl: quote.merchantUrl,
       },
     });
-    if (moved.count === 0) throw new WatchError("The watch changed just now (maybe it was bought). Refresh.", 409);
+    if (moved.count === 0) throw new WatchError("The tracker changed just now (maybe it was bought). Refresh.", 409);
     await tx.mandate.update({
       where: { watchId: watch.id },
       data: {

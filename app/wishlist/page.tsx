@@ -100,7 +100,7 @@ export default async function WishlistPage({ searchParams }: PageProps<"/wishlis
                     {watch ? (
                       <>
                         <Link href={`/watches/${watch.id}`} className="nb-btn">
-                          {watch.status === "AWAITING_APPROVAL" ? "Approve" : "View watch"}
+                          {watch.status === "AWAITING_APPROVAL" ? "Approve" : "View tracker"}
                         </Link>
                         <Link href={`/chat/${item.id}`} className="nb-btn nb-btn-white">
                           Edit
@@ -108,7 +108,7 @@ export default async function WishlistPage({ searchParams }: PageProps<"/wishlis
                       </>
                     ) : (
                       <Link href={`/chat/${item.id}`} className="nb-btn">
-                        Watch this
+                        Track price
                       </Link>
                     )}
                     <HeartButton

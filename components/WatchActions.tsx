@@ -133,7 +133,7 @@ export function WatchActions({ watchId, likedItemId, status, demoMode, refundabl
             </button>
           )}
           <button className="nb-btn nb-btn-white" disabled={busy != null} onClick={() => act("cancel")}>
-            Stop watching
+            Stop tracking
           </button>
         </div>
       )}

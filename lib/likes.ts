@@ -62,7 +62,7 @@ export async function unlikeProduct(userId: string, productId: string) {
   });
   if (!item) return;
   if (item.watches.length > 0) {
-    throw new LikeError("DropCart is watching this item. Cancel the watch before unliking.", 409);
+    throw new LikeError("DropCart is tracking this item. Stop the tracker before unliking.", 409);
   }
   await db.likedItem.delete({ where: { id: item.id } });
 }

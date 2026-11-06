@@ -1,7 +1,7 @@
 import type { WatchStatus } from "@/generated/prisma/enums";
 
 const STYLES: Record<WatchStatus, { label: string; bg: string }> = {
-  ACTIVE: { label: "Watching", bg: "bg-yellow" },
+  ACTIVE: { label: "Tracking", bg: "bg-yellow" },
   AWAITING_APPROVAL: { label: "Awaiting approval", bg: "bg-pink" },
   PURCHASING: { label: "Purchasing", bg: "bg-blue" },
   BOUGHT: { label: "Bought", bg: "bg-green" },

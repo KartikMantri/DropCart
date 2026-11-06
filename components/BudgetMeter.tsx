@@ -16,7 +16,7 @@ export function BudgetMeter({ summary }: { summary: BudgetSummary }) {
         <div>
           <h3 className="text-lg font-bold uppercase">DropCart Budget</h3>
           <p className="text-sm">
-            Each watch reserves its max price. PayPal is charged only when something is bought.
+            Each price tracker reserves its max price. PayPal is charged only when something is bought.
           </p>
         </div>
         <p className="font-mono">

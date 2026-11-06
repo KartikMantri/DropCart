@@ -9,11 +9,11 @@ import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import { StatusChip } from "@/components/StatusChip";
 import { WatchActions } from "@/components/WatchActions";
 
-export const metadata: Metadata = { title: "Watch — DropCart" };
+export const metadata: Metadata = { title: "Price tracker — DropCart" };
 
 const ACTION_LABEL: Record<string, string> = {
   MANDATE_CONFIRMED: "You confirmed the mandate",
-  WATCH_CREATED: "Started watching",
+  WATCH_CREATED: "Started tracking",
   MANDATE_EDITED: "You edited the mandate",
   VARIANT_CHANGED: "You changed the variant",
   GUARD_SKIP: "Guard: skipped",
@@ -27,7 +27,7 @@ const ACTION_LABEL: Record<string, string> = {
   EXPIRED: "Mandate expired",
   PAUSED: "Paused",
   RESUMED: "Resumed",
-  CANCELLED: "Stopped watching",
+  CANCELLED: "Stopped tracking",
   RECOVERED: "Recovered an interrupted purchase",
 };
 

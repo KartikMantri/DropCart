@@ -139,7 +139,7 @@ export function buildAgentTools(ctx: AgentContext) {
 
     draft_mandate: tool({
       description:
-        "Fill the mandate form shown next to the chat for the watched item. This does NOT start watching or charge anything — the user reviews, edits and confirms the form themselves. Only call once you know the max price; ask for a variant if the product has variants and the user hasn't picked one.",
+        "Fill the mandate form shown next to the chat for the watched item. This does NOT start tracking or charge anything — the user reviews, edits and confirms the form themselves. Only call once you know the max price; ask for a variant if the product has variants and the user hasn't picked one.",
       inputSchema: z.object({
         maxPrice: z.number().positive().describe("Max price in USD the user will pay."),
         variant: variantInput,
@@ -148,7 +148,7 @@ export function buildAgentTools(ctx: AgentContext) {
           .int()
           .min(1)
           .max(MAX_EXPIRY_DAYS)
-          .describe("How long to watch, in days. Default 30 if the user didn't say."),
+          .describe("How long to track the price, in days. Default 30 if the user didn't say."),
         mode: z
           .enum(MANDATE_MODES)
           .describe(
@@ -167,7 +167,7 @@ export function buildAgentTools(ctx: AgentContext) {
           .map((d) => d.name);
         if (missing.length > 0) {
           notes.push(
-            `No ${missing.join("/")} chosen — DropCart will watch the default variant unless the user picks one.`,
+            `No ${missing.join("/")} chosen — DropCart will track the default variant unless the user picks one.`,
           );
         }
 
@@ -203,7 +203,7 @@ export function systemPrompt(ctx: AgentContext): string {
   const p = ctx.product;
   const variants = p ? compactVariants(p.variants) : [];
   return [
-    "You are DropCart's shopping agent. You help the user set up a price watch (a 'mandate') for one product.",
+    "You are DropCart's shopping agent. You help the user set up a price tracker (a 'mandate') for one product.",
     "",
     "HARD RULES",
     "- You never buy, pay, charge, refund or approve anything. You cannot. Payments only happen on the server, inside a mandate the user confirmed, after a price check passes the guard.",
@@ -212,7 +212,7 @@ export function systemPrompt(ctx: AgentContext): string {
     "- When you know the max price (and the variant, if needed), call draft_mandate. Then tell the user, in one or two sentences, to check the form and press Confirm.",
     "- Variant values must come from the product's options below or from list_variants.",
     "- mode is AUTO unless the user says they want to approve each purchase first (then ASK_FIRST). expiresInDays is 30 unless the user says otherwise.",
-    "- Each watch reserves its max price from the user's DropCart Budget. If the max price the user wants is more than the free budget, still draft it, but tell them only the free amount fits and they can lower the limit or top up their budget on the wishlist page.",
+    "- Each price tracker reserves its max price from the user's DropCart Budget. If the max price the user wants is more than the free budget, still draft it, but tell them only the free amount fits and they can lower the limit or top up their budget on the wishlist page.",
     "- Prices are USD. Reply in plain text: one to three short sentences, no markdown, no bullet lists, no tables.",
     "",
     "THE PRODUCT BEING WATCHED",
@@ -230,9 +230,9 @@ export function systemPrompt(ctx: AgentContext): string {
     ...(ctx.currentMandate
       ? [
           "",
-          "EDITING AN EXISTING WATCH",
+          "EDITING AN EXISTING PRICE TRACKER",
           `- current mandate: max $${ctx.currentMandate.maxPrice}, variant ${ctx.currentMandate.variant ?? "default"}, mode ${ctx.currentMandate.mode}, expires ${ctx.currentMandate.expiresAt.toISOString().slice(0, 10)}, status ${ctx.currentMandate.status}`,
-          "- The user is changing this watch. Call draft_mandate with the FULL updated mandate: copy every field they didn't mention from the current mandate (expiresInDays = days left until the current expiry unless they change it).",
+          "- The user is changing this tracker. Call draft_mandate with the FULL updated mandate: copy every field they didn't mention from the current mandate (expiresInDays = days left until the current expiry unless they change it).",
           "- Then tell them to check the form and press Save changes. Raising the limit to or above today's price means DropCart will ask before buying.",
         ]
       : []),

@@ -108,7 +108,7 @@ export async function createVaultSetupToken(opts: {
         paymentSource: {
           paypal: {
             usageType: PaypalPaymentTokenUsageType.Merchant,
-            description: "DropCart buys a watched item for you when it drops to your price.",
+            description: "DropCart buys a tracked item for you when it drops to your price.",
             permitMultiplePaymentTokens: false,
             experienceContext: {
               brandName: "DropCart",

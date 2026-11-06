@@ -16,7 +16,7 @@ export async function WatchingRow({ userId }: { userId: string }) {
 
   return (
     <section className="mb-10">
-      <h2 className="nb-section-title">Watching</h2>
+      <h2 className="nb-section-title">Price trackers</h2>
       <ul className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-3">
         {watches.map((w) => {
           const last = w.priceChecks[0] ? Number(w.priceChecks[0].price) : null;

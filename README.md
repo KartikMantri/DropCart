@@ -51,18 +51,21 @@ The guard is a pure function with unit tests covering every branch. It applies t
 
 | # | Rule | Decision |
 |---|---|---|
-| 1 | Watch isn't `ACTIVE` | SKIP (inactive) |
+| 1 | Price tracker isn't `ACTIVE` | SKIP (inactive) |
 | 2 | Mandate has expired | EXPIRE |
-| 3 | Live product ≠ watched product | SKIP (mismatch) |
-| 4 | Live variant ≠ watched variant | SKIP (variant) |
-| 5 | Out of stock | SKIP (stock) |
-| 6 | Price > mandate max | SKIP (price) |
-| 7 | Spent + price > DropCart Budget (safety net; watches already reserve their limit) | ASK (budget) |
-| 8 | Mandate mode is `ASK_FIRST` | ASK (mode) |
-| 9 | Limit was just raised above today's price | ASK (would buy now) |
+| 3 | Channel3 has no offer for the product | SKIP (unavailable) |
+| 4 | Live product ≠ tracked product | SKIP (mismatch) |
+| 5 | Live variant ≠ tracked variant | SKIP (variant) |
+| 6 | Price currency ≠ mandate currency | SKIP (currency) |
+| 7 | Store not in the allowed list (empty list = any store) | SKIP (merchant) |
+| 8 | Out of stock | SKIP (stock) |
+| 9 | No price, or price > mandate max | SKIP (price) |
+| 10 | Spent + price > DropCart Budget (safety net; each tracker already reserves its limit) | ASK (budget) |
+| 11 | Mandate mode is `ASK_FIRST` | ASK (mode) |
+| 12 | Limit was just raised to or above today's price | ASK (would buy now) |
 | — | Otherwise | **BUY** |
 
-Every decision writes an `AuditLog` row. Every capture uses `PayPal-Request-Id = ${watchId}:${priceCheckId}`, so a retry can never double-charge.
+Every decision writes an `AuditLog` row. Payment happens only when the guard says BUY twice: on the scheduled check and on a fresh live re-check right before capture. Every capture uses `PayPal-Request-Id = ${watchId}:${priceCheckId}`, so a retry can never double-charge.
 
 ## Sponsor tools used
 
@@ -148,7 +151,7 @@ npm run dev            # http://localhost:3000
 | `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | Sandbox REST app credentials | [developer.paypal.com](https://developer.paypal.com) → Apps & Credentials → Sandbox |
 | `PAYPAL_ENV` | Must be `sandbox` | — |
 | `CRON_SECRET` | Bearer token for `/api/cron/check` | Any long random string |
-| `DEMO_MODE` | `true` enables "Check now" and the price override | — |
+| `DEMO_MODE` | `true` enables "Check now" and "Drop & check" (price override) | — |
 
 Useful scripts:
 - `npm test`: unit tests (guard, budget, purchase flow, checks, PayPal hard cap, LLM fallback).

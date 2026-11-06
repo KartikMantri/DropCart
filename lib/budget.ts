@@ -51,8 +51,8 @@ export function canReserve(summary: BudgetSummary, amount: number): ReserveCheck
     shortBy: fromCents(cents(amount) - cents(free)),
     message:
       `Only ${usd(free)} of your ${usd(summary.budget)} DropCart Budget is free ` +
-      `(${usd(summary.spent)} spent, ${usd(summary.reserved)} reserved by other watches). ` +
-      `Lower the limit to ${usd(free)} or less, top up your budget, or cancel a watch.`,
+      `(${usd(summary.spent)} spent, ${usd(summary.reserved)} reserved by other trackers). ` +
+      `Lower the limit to ${usd(free)} or less, top up your budget, or stop a tracker.`,
   };
 }
 
@@ -64,7 +64,7 @@ export function checkNewBudget(summary: BudgetSummary, next: number): { ok: true
   if (cents(next) < cents(floor)) {
     return {
       ok: false,
-      message: `Budget can't go below ${usd(floor)}: ${usd(summary.spent)} is spent and ${usd(summary.reserved)} is reserved by open watches.`,
+      message: `Budget can't go below ${usd(floor)}: ${usd(summary.spent)} is spent and ${usd(summary.reserved)} is reserved by open trackers.`,
     };
   }
   return { ok: true };

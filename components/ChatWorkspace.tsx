@@ -126,21 +126,21 @@ export function ChatWorkspace({
     ? [
         `Raise my limit to $${Math.max(base, Math.round((editing.draft.maxPrice ?? base) * 1.1))}`,
         "Ask me before buying",
-        "Keep watching for 30 more days",
+        "Keep tracking for 30 more days",
       ]
     : [
         `Get it under $${base}, for 30 days`,
-        `Watch it for 2 weeks, max $${base}, ask me first`,
+        `Track it for 2 weeks, max $${base}, ask me first`,
         "What variants does it come in?",
       ];
 
   if (created) {
     return (
       <div className="nb-card flex flex-col items-start gap-4 p-8">
-        <span className="nb-chip bg-yellow">Watching</span>
+        <span className="nb-chip bg-yellow">Tracking</span>
         <h2 className="text-3xl font-bold uppercase">{created.edited ? "Mandate updated" : "Mandate confirmed"}</h2>
         <p className="text-lg">
-          DropCart is watching this at a limit of{" "}
+          DropCart is tracking this at a limit of{" "}
           <span className="font-mono font-extrabold">{formatUsd(draft.maxPrice)}</span> (today{" "}
           <span className="font-mono font-extrabold">{formatUsd(created.priceNow)}</span>).
           {created.wouldBuyNow && " Your limit is above today's price, so it will ask you before buying."}
@@ -155,7 +155,7 @@ export function ChatWorkspace({
         )}
         <div className="flex gap-3">
           <Link href={`/watches/${created.watchId}`} className="nb-btn">
-            View watch
+            View tracker
           </Link>
           <Link href="/wishlist" className="nb-btn nb-btn-white">
             Wishlist
@@ -177,6 +177,7 @@ export function ChatWorkspace({
           error={error}
           disabled={llmReady ? null : "Agent offline — fill the form yourself"}
           suggestions={suggestions}
+          editing={Boolean(editing)}
           onSend={(text) => sendMessage({ text })}
           onStop={stop}
         />
