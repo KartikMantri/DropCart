@@ -8,6 +8,8 @@
  * and audit log) and notifications, and sets the budget back to $500.
  * Keeps the wishlist and the saved PayPal sandbox token (pass --disconnect-paypal
  * to clear it too). Sandbox records at PayPal are not touched.
+ *
+ *   ... reset-demo.ts --only-disconnect   clear just the PayPal token, keep everything else
  */
 import { config } from "dotenv";
 config({ path: ".env.local", quiet: true });
@@ -15,13 +17,22 @@ config({ quiet: true });
 
 async function main() {
   const yes = process.argv.includes("--yes");
-  const disconnect = process.argv.includes("--disconnect-paypal");
+  const onlyDisconnect = process.argv.includes("--only-disconnect");
+  const disconnect = onlyDisconnect || process.argv.includes("--disconnect-paypal");
   const { getDb } = await import("../lib/db");
   const { DEMO_EMAIL } = await import("../lib/demo-account");
   const db = getDb();
 
   const user = await db.user.findUnique({ where: { email: DEMO_EMAIL } });
   if (!user) throw new Error(`No user ${DEMO_EMAIL}. Run \`npx prisma db seed\` first.`);
+
+  if (onlyDisconnect) {
+    console.log(`Demo account ${DEMO_EMAIL}: PayPal sandbox token ${user.paypalVaultToken ? "connected → clear" : "already not connected"}`);
+    if (yes) await db.user.update({ where: { id: user.id }, data: { paypalVaultToken: null, paypalCustomerId: null } });
+    console.log(yes ? "Done." : "Dry run. Re-run with --yes to apply.");
+    await db.$disconnect();
+    return;
+  }
 
   const [trackers, purchases, notifications, likes] = await Promise.all([
     db.watch.count({ where: { userId: user.id } }),
